@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "日本のバイクと世界のバイクの燃費"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - about.qmd
+      - about-5.qmd 
+      - about-2.qmd
+      - about-3.qmd
+      - about-4.qmd
+      
+      
+      
+
+format:
+  html:
+    theme: LUX
+    css: styles.css
+    toc: true
+
+editor: visual
+

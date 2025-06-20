@@ -1,0 +1,31 @@
+---
+title: "日本のバイクと世界のバイクの燃費"
+---
+
+# 研究目的
+
+#### 1980年以降の国内外のバイクの年式や排気量から燃費性能の推移を比較する為
+
+# 参考文献
+
+１．**ホンダ(HONDA)のヒストリー収録車両**
+
+**（**<https://www.bbb-bike.com/history/honda.html#history_50cc>）
+
+２．**ヤマハ(YAMAHA)のヒストリー収録車両**
+
+**（**<https://www.bbb-bike.com/history/yamaha.html>）
+
+３．**スズキ(SUZUKI)のヒストリー収録車両**
+
+**（**<https://www.bbb-bike.com/history/suzuki.html>）
+
+４．**カワサキ(KAWASAKI)のヒストリー収録車両**
+
+**（**<https://www.bbb-bike.com/history/kawasaki.html>）
+
+５，**BMWバイク 年式別モデルカタログ**
+
+**（**<https://www.virginbmw.com/yearsmodel/>）
+
+６．BikeBros(バイクブロス）バイクカタログ・諸元表・スペック情報からバイクを探す（<https://www.bikebros.co.jp/catalog/>）
