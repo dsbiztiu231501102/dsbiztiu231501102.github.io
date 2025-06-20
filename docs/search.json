@@ -1,0 +1,212 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "日本のバイクと世界のバイクの燃費",
+    "section": "",
+    "text": "研究目的\n\n1980年以降の国内外のバイクの年式や排気量から燃費性能の推移を比較する為\n\n\n\n参考文献\n１．ホンダ(HONDA)のヒストリー収録車両\n（https://www.bbb-bike.com/history/honda.html#history_50cc）\n２．ヤマハ(YAMAHA)のヒストリー収録車両\n（https://www.bbb-bike.com/history/yamaha.html）\n３．スズキ(SUZUKI)のヒストリー収録車両\n（https://www.bbb-bike.com/history/suzuki.html）\n４．カワサキ(KAWASAKI)のヒストリー収録車両\n（https://www.bbb-bike.com/history/kawasaki.html）\n５，BMWバイク 年式別モデルカタログ\n（https://www.virginbmw.com/yearsmodel/）\n６．BikeBros(バイクブロス）バイクカタログ・諸元表・スペック情報からバイクを探す（https://www.bikebros.co.jp/catalog/）"
+  },
+  {
+    "objectID": "about-4.html",
+    "href": "about-4.html",
+    "title": "リストで比較",
+    "section": "",
+    "text": "# ライブラリ読み込み\nlibrary(readxl)\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\nlibrary(DT)\n\n# Excelファイルの読み込み\nfile_path &lt;- \"バイク年式;燃費 .xlsx\"\nsheet_names &lt;- excel_sheets(file_path)\n\n# 各シートを読み込み、メーカー列を追加\nall_sheets &lt;- lapply(sheet_names, function(sheet) {\n  df &lt;- read_excel(file_path, sheet = sheet)\n  df$メーカー &lt;- sheet\n  df\n})\nall_bikes &lt;- bind_rows(all_sheets)\n\n# 列名を標準化（列の順番に応じて調整が必要な場合あり）\nall_bikes &lt;- all_bikes %&gt;%\n  rename(\n    車種 = 1,\n    年式 = 2,\n    燃費 = 3,\n    タンク容量 = 4,\n    航続距離 = 5,\n    排気量 = 6\n  ) %&gt;%\n  mutate(\n    年式 = as.numeric(年式),\n    燃費 = as.numeric(燃費),\n    タンク容量 = as.numeric(タンク容量),\n    航続距離 = as.numeric(航続距離),\n    排気量 = as.numeric(排気量)\n  )\n\n# 各項目をスコア化（年式、燃費、タンク容量、航続距離、排気量＝7段階）\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    年式スコア = case_when(\n      年式 &gt;= 2020 ~ 5,\n      年式 &gt;= 2015 ~ 4,\n      年式 &gt;= 2010 ~ 3,\n      年式 &gt;= 2000 ~ 2,\n      年式 &gt;= 1990 ~ 1,\n      TRUE ~ 0\n    ),\n    燃費スコア = case_when(\n      燃費 &gt;= 40 ~ 5,\n      燃費 &gt;= 35 ~ 4,\n      燃費 &gt;= 30 ~ 3,\n      燃費 &gt;= 25 ~ 2,\n      燃費 &gt;= 20 ~ 1,\n      TRUE ~ 0\n    ),\n    タンクスコア = case_when(\n      タンク容量 &gt;= 20 ~ 5,\n      タンク容量 &gt;= 17 ~ 4,\n      タンク容量 &gt;= 14 ~ 3,\n      タンク容量 &gt;= 10 ~ 2,\n      タンク容量 &gt;= 5 ~ 1,\n      TRUE ~ 0\n    ),\n    航続スコア = case_when(\n      航続距離 &gt;= 500 ~ 5,\n      航続距離 &gt;= 400 ~ 4,\n      航続距離 &gt;= 300 ~ 3,\n      航続距離 &gt;= 200 ~ 2,\n      航続距離 &gt;= 100 ~ 1,\n      TRUE ~ 0\n    ),\n    排気量スコア = case_when(\n      排気量 &lt;= 50 ~ 1,\n      排気量 &lt;= 125 ~ 2,\n      排気量 &lt;= 250 ~ 3,\n      排気量 &lt;= 400 ~ 4,\n      排気量 &lt;= 750 ~ 5,\n      排気量 &lt;= 1000 ~ 6,\n      排気量 &gt; 1000 ~ 7,\n      TRUE ~ NA_real_\n    ),\n    合計スコア = 年式スコア + 燃費スコア + タンクスコア + 航続スコア + 排気量スコア\n  )\n\n# 表形式で表示（インタラクティブ）\ndatatable(\n  all_bikes %&gt;%\n    select(メーカー, 車種, 年式, 燃費, タンク容量, 航続距離, 排気量,\n           年式スコア, 燃費スコア, タンクスコア, 航続スコア, 排気量スコア, 合計スコア),\n  options = list(pageLength = 15),\n  caption = \"バイクのスペック評価（スコア一覧）\"\n)\n\n\n\n\n\n\n\n\n\n\n# 必要なパッケージ\nlibrary(dplyr)\nlibrary(DT)\n\n# データ処理 + 表を作成\nall_bikes %&gt;%\n  group_by(メーカー) %&gt;%\n  summarise(平均燃費 = mean(燃費, na.rm = TRUE)) %&gt;%\n  arrange(desc(平均燃費)) %&gt;%\n  datatable(options = list(pageLength = 10, autoWidth = TRUE))\n\n\n\n\n\n\n\n燃費重視のユーザーにとっては、日本メーカーのバイクが有力な選択肢となります。\n\n\n\n外車は燃費よりも**走行性能・デザイン・エンジン特性（大排気量や高出力）**が重視されている可能性があります\n\n\n\n\n\nlibrary(dplyr)\nlibrary(DT)\n\n# 排気量帯を追加\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    排気量帯 = case_when(\n      排気量 &lt;= 50 ~ \"〜50cc\",\n      排気量 &lt;= 125 ~ \"51〜125cc\",\n      排気量 &lt;= 250 ~ \"126〜250cc\",\n      排気量 &lt;= 400 ~ \"251〜400cc\",\n      排気量 &lt;= 750 ~ \"401〜750cc\",\n      排気量 &lt;= 1000 ~ \"751〜1000cc\",\n      排気量 &gt; 1000 ~ \"1001cc〜\",\n      TRUE ~ \"不明\"\n    )\n  )\n\n# 平均燃費を排気量帯ごとに計算し、インタラクティブ表に\nall_bikes %&gt;%\n  group_by(排気量帯) %&gt;%\n  summarise(平均燃費 = mean(燃費, na.rm = TRUE)) %&gt;%\n  arrange(排気量帯) %&gt;%\n  datatable(\n    caption = \"排気量帯別の平均燃費（km/L）\",\n    options = list(pageLength = 10, autoWidth = TRUE)\n  )\n\n\n\n\n\n\n\n排気量が小さいほど燃費が良い\n特に「50cc以下」「51〜125cc」は50km/Lを超える高燃費。\n小排気量車（スクーターや原付）は燃費性能が非常に高いことが分かります。\n排気量が大きくなるにつれて燃費は悪化\n「751〜1000cc」「1001cc以上」では20km/L未満と低め。\n排気量が大きいバイクはパワーとトルク重視の設計で、燃費は犠牲になっている傾向。\n126〜400ccはバランス型\nこの帯域（126〜400cc）は燃費とパワーの中間的なポジション\n初心者から中級者向けに人気がある理由の一つと考えられ\n\n\n\n\n\nlibrary(dplyr)\nlibrary(tidyr)\nlibrary(DT)\n\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    年式帯 = case_when(\n      年式 &gt;= 2020 ~ \"2020年代\",\n      年式 &gt;= 2010 ~ \"2010年代\",\n      年式 &gt;= 2000 ~ \"2000年代\",\n      年式 &gt;= 1990 ~ \"1990年代\",\n      年式 &gt;= 1980 ~ \"1980年代\",\n      TRUE ~ \"その他\"\n    )\n  )\n\ntable1 &lt;- all_bikes %&gt;%\n  group_by(メーカー, 排気量帯) %&gt;%\n  summarise(平均燃費 = round(mean(燃費, na.rm = TRUE), 1), .groups = \"drop\") %&gt;%\n  pivot_wider(names_from = 排気量帯, values_from = 平均燃費)\n\ndatatable(table1, caption = \"📊 メーカー × 排気量帯ごとの平均燃費\", options = list(pageLength = 20))\n\n\n\n\n\n\n\n\n\n\n\n例：\nホンダ：\n\n～50cc：64.5 km/L\n51〜125cc：62.7 km/L\n1001cc〜：17.7 km/L\nスズキ：\n～50cc：75.9 km/L（表中最高値）\n1001cc〜：20 km/L\n✅ ヤマハは全体的に燃費が優秀\nどの排気量帯でも比較的高め（例：126〜250ccで35.4km/L、400cc以上でも27.2km/L）\n\n✅ **欧州メーカー（BMW、KTM、トライアンフ）は大排気量で苦戦**\n\nKTM（1001cc〜）：17.0 km/L\nトライアンフ（1001cc〜）：20.3 km/L\nBMW（1001cc〜）：21.1 km/L\n一方でBMWの126〜250ccは比較的良好（30.0 km/L）\n\n\n\n\n\n\n\n\n\n\n\n特徴\n内容\n\n\n\n\n✅ 燃費最良（全体）\nスズキ ～50cc：75.9 km/L\n\n\n✅ 小排気量で特に優秀なメーカー\nホンダ・スズキ・ヤマハ（全て50km/L超え）\n\n\n❌ 燃費が低い傾向のメーカー\nKTM（全体的に20〜30km/L以下が多い）\n\n\n✅ 250〜400cc帯で燃費が高い\nヤマハ（33.2 km/L）\n\n\n❌ 極端な燃費のばらつき\nトライアンフ（400〜750ccは良いが、50cc以下や高排気量は不明／低め）\n\n\n\n\n\n\n\n\n\nホンダ・ヤマハ・スズキは全排気量帯で安定した燃費性能を見せており、特に原付や軽二輪で圧倒的な燃費性能を発揮。\nBMW・KTM・トライアンフなどの海外メーカーは、特に高排気量車が多く、燃費よりもパフォーマンス志向。\nアプリリアは中排気量帯で控えめな性能だが、50cc以下では42.3 km/Lと比較的良い数値。\n\n\n\n燃費重視なら日本メーカー（特にスズキ・ホンダ・ヤマハ）の小〜中排気量バイクが有力候補。\n\n**趣味・ツーリング用途の欧州車は燃費よりもエンジン特性・ブランド性**を重視する傾向。\n\n\n\n\ntable2 &lt;- all_bikes %&gt;%\n  group_by(年式帯, 排気量帯) %&gt;%\n  summarise(平均燃費 = round(mean(燃費, na.rm = TRUE), 1), .groups = \"drop\") %&gt;%\n  pivot_wider(names_from = 排気量帯, values_from = 平均燃費)\n\ndatatable(table2, caption = \"📊 年式帯 × 排気量帯ごとの平均燃費\", options = list(pageLength = 10))\n\n\n\n\n\n\n\n\n\n\n\n\nこれはエンジンの物理的特性・車体重量に基づく自然な傾向です。\n\n例：\n\nホンダ（～50cc）：64.5 km/L\nヤマハ（～50cc）：65.6 km/L\nスズキ（～50cc）：75.9 km/L（表中最高）\n\n\n\n\n\n\n\n\n～125cc帯で非常に優秀（51～125cc：62.7km/L）\n大排気量では控えめ（1001cc〜：17.7km/L）\n全体的に燃費の安定感が高い\n\n\n\n\n\n全排気量でバランスよく燃費が良い\n126〜250cc：35.4km/L（表中最高）\n401〜750cc：27.2km/L（他社より高い）\n総合的に最も燃費優秀なメーカー\n\n\n\n\n\n～50ccで75.9km/Lと最高記録\n小〜中排気量で堅実な燃費（例：51〜125cc 45.4km/L）\n\n\n\n全体的に燃費は低め\n1001cc〜：17.0km/L（最低）\n401〜750cc：データなし\n高出力志向のブランドらしい傾向\n\n\n\n\n\n小〜中排気量では意外に健闘（126〜250cc：30km/L）\n高排気量は平凡（1001cc〜：21.1km/L）\n\nデータが一部欠けている（“不明”列あり）\n\nアプリリア：50ccは42.3km/L → 中程度\n\nトライアンフ：全体的に燃費はやや低め\n\n\n\n\n\n\n\n\n\n\n\n観点\n結論\n\n\n\n\n燃費最強排気量帯\n～50cc（全メーカーで高燃費）\n\n\n燃費最強メーカー\nヤマハ（全体的にバランスが良く、特に中排気量で優秀）\n\n\n高排気量で健闘\nBMW（1001cc以上で21.1km/Lは高め）\n\n\n低燃費メーカー\nKTM（すべての帯域で20〜30km/L未満）\n\n\n特筆すべき記録\nスズキ ～50ccで75.9km/L → 全体で最高値\n\n\n排気量と燃費の関係\n排気量が上がるほど燃費が落ちる傾向は明確\n\n\n\n\n\n\n\nline_data &lt;- all_bikes %&gt;%\n  group_by(年式帯) %&gt;%\n  summarise(平均燃費 = round(mean(燃費, na.rm = TRUE), 1)) %&gt;%\n  arrange(年式帯)\n\ndatatable(line_data, caption = \"📈 年式帯別 平均燃費（折れ線グラフ用）\")"
+  },
+  {
+    "objectID": "about-4.html#車種リストスコア",
+    "href": "about-4.html#車種リストスコア",
+    "title": "リストで比較",
+    "section": "",
+    "text": "# ライブラリ読み込み\nlibrary(readxl)\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\nlibrary(DT)\n\n# Excelファイルの読み込み\nfile_path &lt;- \"バイク年式;燃費 .xlsx\"\nsheet_names &lt;- excel_sheets(file_path)\n\n# 各シートを読み込み、メーカー列を追加\nall_sheets &lt;- lapply(sheet_names, function(sheet) {\n  df &lt;- read_excel(file_path, sheet = sheet)\n  df$メーカー &lt;- sheet\n  df\n})\nall_bikes &lt;- bind_rows(all_sheets)\n\n# 列名を標準化（列の順番に応じて調整が必要な場合あり）\nall_bikes &lt;- all_bikes %&gt;%\n  rename(\n    車種 = 1,\n    年式 = 2,\n    燃費 = 3,\n    タンク容量 = 4,\n    航続距離 = 5,\n    排気量 = 6\n  ) %&gt;%\n  mutate(\n    年式 = as.numeric(年式),\n    燃費 = as.numeric(燃費),\n    タンク容量 = as.numeric(タンク容量),\n    航続距離 = as.numeric(航続距離),\n    排気量 = as.numeric(排気量)\n  )\n\n# 各項目をスコア化（年式、燃費、タンク容量、航続距離、排気量＝7段階）\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    年式スコア = case_when(\n      年式 &gt;= 2020 ~ 5,\n      年式 &gt;= 2015 ~ 4,\n      年式 &gt;= 2010 ~ 3,\n      年式 &gt;= 2000 ~ 2,\n      年式 &gt;= 1990 ~ 1,\n      TRUE ~ 0\n    ),\n    燃費スコア = case_when(\n      燃費 &gt;= 40 ~ 5,\n      燃費 &gt;= 35 ~ 4,\n      燃費 &gt;= 30 ~ 3,\n      燃費 &gt;= 25 ~ 2,\n      燃費 &gt;= 20 ~ 1,\n      TRUE ~ 0\n    ),\n    タンクスコア = case_when(\n      タンク容量 &gt;= 20 ~ 5,\n      タンク容量 &gt;= 17 ~ 4,\n      タンク容量 &gt;= 14 ~ 3,\n      タンク容量 &gt;= 10 ~ 2,\n      タンク容量 &gt;= 5 ~ 1,\n      TRUE ~ 0\n    ),\n    航続スコア = case_when(\n      航続距離 &gt;= 500 ~ 5,\n      航続距離 &gt;= 400 ~ 4,\n      航続距離 &gt;= 300 ~ 3,\n      航続距離 &gt;= 200 ~ 2,\n      航続距離 &gt;= 100 ~ 1,\n      TRUE ~ 0\n    ),\n    排気量スコア = case_when(\n      排気量 &lt;= 50 ~ 1,\n      排気量 &lt;= 125 ~ 2,\n      排気量 &lt;= 250 ~ 3,\n      排気量 &lt;= 400 ~ 4,\n      排気量 &lt;= 750 ~ 5,\n      排気量 &lt;= 1000 ~ 6,\n      排気量 &gt; 1000 ~ 7,\n      TRUE ~ NA_real_\n    ),\n    合計スコア = 年式スコア + 燃費スコア + タンクスコア + 航続スコア + 排気量スコア\n  )\n\n# 表形式で表示（インタラクティブ）\ndatatable(\n  all_bikes %&gt;%\n    select(メーカー, 車種, 年式, 燃費, タンク容量, 航続距離, 排気量,\n           年式スコア, 燃費スコア, タンクスコア, 航続スコア, 排気量スコア, 合計スコア),\n  options = list(pageLength = 15),\n  caption = \"バイクのスペック評価（スコア一覧）\"\n)"
+  },
+  {
+    "objectID": "about-4.html#メーカー別平均燃費",
+    "href": "about-4.html#メーカー別平均燃費",
+    "title": "リストで比較",
+    "section": "",
+    "text": "# 必要なパッケージ\nlibrary(dplyr)\nlibrary(DT)\n\n# データ処理 + 表を作成\nall_bikes %&gt;%\n  group_by(メーカー) %&gt;%\n  summarise(平均燃費 = mean(燃費, na.rm = TRUE)) %&gt;%\n  arrange(desc(平均燃費)) %&gt;%\n  datatable(options = list(pageLength = 10, autoWidth = TRUE))\n\n\n\n\n\n\n\n燃費重視のユーザーにとっては、日本メーカーのバイクが有力な選択肢となります。\n\n\n\n外車は燃費よりも**走行性能・デザイン・エンジン特性（大排気量や高出力）**が重視されている可能性があります"
+  },
+  {
+    "objectID": "about-4.html#排気量別平均燃費",
+    "href": "about-4.html#排気量別平均燃費",
+    "title": "リストで比較",
+    "section": "",
+    "text": "library(dplyr)\nlibrary(DT)\n\n# 排気量帯を追加\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    排気量帯 = case_when(\n      排気量 &lt;= 50 ~ \"〜50cc\",\n      排気量 &lt;= 125 ~ \"51〜125cc\",\n      排気量 &lt;= 250 ~ \"126〜250cc\",\n      排気量 &lt;= 400 ~ \"251〜400cc\",\n      排気量 &lt;= 750 ~ \"401〜750cc\",\n      排気量 &lt;= 1000 ~ \"751〜1000cc\",\n      排気量 &gt; 1000 ~ \"1001cc〜\",\n      TRUE ~ \"不明\"\n    )\n  )\n\n# 平均燃費を排気量帯ごとに計算し、インタラクティブ表に\nall_bikes %&gt;%\n  group_by(排気量帯) %&gt;%\n  summarise(平均燃費 = mean(燃費, na.rm = TRUE)) %&gt;%\n  arrange(排気量帯) %&gt;%\n  datatable(\n    caption = \"排気量帯別の平均燃費（km/L）\",\n    options = list(pageLength = 10, autoWidth = TRUE)\n  )\n\n\n\n\n\n\n\n排気量が小さいほど燃費が良い\n特に「50cc以下」「51〜125cc」は50km/Lを超える高燃費。\n小排気量車（スクーターや原付）は燃費性能が非常に高いことが分かります。\n排気量が大きくなるにつれて燃費は悪化\n「751〜1000cc」「1001cc以上」では20km/L未満と低め。\n排気量が大きいバイクはパワーとトルク重視の設計で、燃費は犠牲になっている傾向。\n126〜400ccはバランス型\nこの帯域（126〜400cc）は燃費とパワーの中間的なポジション\n初心者から中級者向けに人気がある理由の一つと考えられ"
+  },
+  {
+    "objectID": "about-4.html#メーカー別排気量別平均燃費",
+    "href": "about-4.html#メーカー別排気量別平均燃費",
+    "title": "リストで比較",
+    "section": "",
+    "text": "library(dplyr)\nlibrary(tidyr)\nlibrary(DT)\n\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    年式帯 = case_when(\n      年式 &gt;= 2020 ~ \"2020年代\",\n      年式 &gt;= 2010 ~ \"2010年代\",\n      年式 &gt;= 2000 ~ \"2000年代\",\n      年式 &gt;= 1990 ~ \"1990年代\",\n      年式 &gt;= 1980 ~ \"1980年代\",\n      TRUE ~ \"その他\"\n    )\n  )\n\ntable1 &lt;- all_bikes %&gt;%\n  group_by(メーカー, 排気量帯) %&gt;%\n  summarise(平均燃費 = round(mean(燃費, na.rm = TRUE), 1), .groups = \"drop\") %&gt;%\n  pivot_wider(names_from = 排気量帯, values_from = 平均燃費)\n\ndatatable(table1, caption = \"📊 メーカー × 排気量帯ごとの平均燃費\", options = list(pageLength = 20))"
+  },
+  {
+    "objectID": "about-4.html#全体的な読み取りポイント",
+    "href": "about-4.html#全体的な読み取りポイント",
+    "title": "リストで比較",
+    "section": "",
+    "text": "例：\nホンダ：\n\n～50cc：64.5 km/L\n51〜125cc：62.7 km/L\n1001cc〜：17.7 km/L\nスズキ：\n～50cc：75.9 km/L（表中最高値）\n1001cc〜：20 km/L\n✅ ヤマハは全体的に燃費が優秀\nどの排気量帯でも比較的高め（例：126〜250ccで35.4km/L、400cc以上でも27.2km/L）\n\n✅ **欧州メーカー（BMW、KTM、トライアンフ）は大排気量で苦戦**\n\nKTM（1001cc〜）：17.0 km/L\nトライアンフ（1001cc〜）：20.3 km/L\nBMW（1001cc〜）：21.1 km/L\n一方でBMWの126〜250ccは比較的良好（30.0 km/L）\n\n\n\n\n\n\n\n\n\n\n\n特徴\n内容\n\n\n\n\n✅ 燃費最良（全体）\nスズキ ～50cc：75.9 km/L\n\n\n✅ 小排気量で特に優秀なメーカー\nホンダ・スズキ・ヤマハ（全て50km/L超え）\n\n\n❌ 燃費が低い傾向のメーカー\nKTM（全体的に20〜30km/L以下が多い）\n\n\n✅ 250〜400cc帯で燃費が高い\nヤマハ（33.2 km/L）\n\n\n❌ 極端な燃費のばらつき\nトライアンフ（400〜750ccは良いが、50cc以下や高排気量は不明／低め）"
+  },
+  {
+    "objectID": "about-4.html#考察",
+    "href": "about-4.html#考察",
+    "title": "リストで比較",
+    "section": "",
+    "text": "ホンダ・ヤマハ・スズキは全排気量帯で安定した燃費性能を見せており、特に原付や軽二輪で圧倒的な燃費性能を発揮。\nBMW・KTM・トライアンフなどの海外メーカーは、特に高排気量車が多く、燃費よりもパフォーマンス志向。\nアプリリアは中排気量帯で控えめな性能だが、50cc以下では42.3 km/Lと比較的良い数値。\n\n\n\n燃費重視なら日本メーカー（特にスズキ・ホンダ・ヤマハ）の小〜中排気量バイクが有力候補。\n\n**趣味・ツーリング用途の欧州車は燃費よりもエンジン特性・ブランド性**を重視する傾向。"
+  },
+  {
+    "objectID": "about-4.html#年代別排気量別平均燃費",
+    "href": "about-4.html#年代別排気量別平均燃費",
+    "title": "リストで比較",
+    "section": "",
+    "text": "table2 &lt;- all_bikes %&gt;%\n  group_by(年式帯, 排気量帯) %&gt;%\n  summarise(平均燃費 = round(mean(燃費, na.rm = TRUE), 1), .groups = \"drop\") %&gt;%\n  pivot_wider(names_from = 排気量帯, values_from = 平均燃費)\n\ndatatable(table2, caption = \"📊 年式帯 × 排気量帯ごとの平均燃費\", options = list(pageLength = 10))"
+  },
+  {
+    "objectID": "about-4.html#全体傾向",
+    "href": "about-4.html#全体傾向",
+    "title": "リストで比較",
+    "section": "",
+    "text": "これはエンジンの物理的特性・車体重量に基づく自然な傾向です。\n\n例：\n\nホンダ（～50cc）：64.5 km/L\nヤマハ（～50cc）：65.6 km/L\nスズキ（～50cc）：75.9 km/L（表中最高）"
+  },
+  {
+    "objectID": "about-4.html#メーカー別の特徴",
+    "href": "about-4.html#メーカー別の特徴",
+    "title": "リストで比較",
+    "section": "",
+    "text": "～125cc帯で非常に優秀（51～125cc：62.7km/L）\n大排気量では控えめ（1001cc〜：17.7km/L）\n全体的に燃費の安定感が高い\n\n\n\n\n\n全排気量でバランスよく燃費が良い\n126〜250cc：35.4km/L（表中最高）\n401〜750cc：27.2km/L（他社より高い）\n総合的に最も燃費優秀なメーカー\n\n\n\n\n\n～50ccで75.9km/Lと最高記録\n小〜中排気量で堅実な燃費（例：51〜125cc 45.4km/L）\n\n\n\n全体的に燃費は低め\n1001cc〜：17.0km/L（最低）\n401〜750cc：データなし\n高出力志向のブランドらしい傾向\n\n\n\n\n\n小〜中排気量では意外に健闘（126〜250cc：30km/L）\n高排気量は平凡（1001cc〜：21.1km/L）\n\nデータが一部欠けている（“不明”列あり）\n\nアプリリア：50ccは42.3km/L → 中程度\n\nトライアンフ：全体的に燃費はやや低め"
+  },
+  {
+    "objectID": "about-4.html#まとめこの表から読み取れる主なこと",
+    "href": "about-4.html#まとめこの表から読み取れる主なこと",
+    "title": "リストで比較",
+    "section": "",
+    "text": "観点\n結論\n\n\n\n\n燃費最強排気量帯\n～50cc（全メーカーで高燃費）\n\n\n燃費最強メーカー\nヤマハ（全体的にバランスが良く、特に中排気量で優秀）\n\n\n高排気量で健闘\nBMW（1001cc以上で21.1km/Lは高め）\n\n\n低燃費メーカー\nKTM（すべての帯域で20〜30km/L未満）\n\n\n特筆すべき記録\nスズキ ～50ccで75.9km/L → 全体で最高値\n\n\n排気量と燃費の関係\n排気量が上がるほど燃費が落ちる傾向は明確"
+  },
+  {
+    "objectID": "about-4.html#年代別平均燃費",
+    "href": "about-4.html#年代別平均燃費",
+    "title": "リストで比較",
+    "section": "",
+    "text": "line_data &lt;- all_bikes %&gt;%\n  group_by(年式帯) %&gt;%\n  summarise(平均燃費 = round(mean(燃費, na.rm = TRUE), 1)) %&gt;%\n  arrange(年式帯)\n\ndatatable(line_data, caption = \"📈 年式帯別 平均燃費（折れ線グラフ用）\")"
+  },
+  {
+    "objectID": "about-2.html",
+    "href": "about-2.html",
+    "title": "車種、年式、燃費、燃料タンク容量、航続距離、排気量のリストとスコア",
+    "section": "",
+    "text": "# ライブラリ読み込み\nlibrary(readxl)\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\nlibrary(DT)\n\n# Excelファイルの読み込み\nfile_path &lt;- \"バイク年式;燃費 .xlsx\"\nsheet_names &lt;- excel_sheets(file_path)\n\n# 各シートを読み込み、メーカー列を追加\nall_sheets &lt;- lapply(sheet_names, function(sheet) {\n  df &lt;- read_excel(file_path, sheet = sheet)\n  df$メーカー &lt;- sheet\n  df\n})\nall_bikes &lt;- bind_rows(all_sheets)\n\n# 列名を標準化（列の順番に応じて調整が必要な場合あり）\nall_bikes &lt;- all_bikes %&gt;%\n  rename(\n    車種 = 1,\n    年式 = 2,\n    燃費 = 3,\n    タンク容量 = 4,\n    航続距離 = 5,\n    排気量 = 6\n  ) %&gt;%\n  mutate(\n    年式 = as.numeric(年式),\n    燃費 = as.numeric(燃費),\n    タンク容量 = as.numeric(タンク容量),\n    航続距離 = as.numeric(航続距離),\n    排気量 = as.numeric(排気量)\n  )\n\n# 各項目をスコア化（年式、燃費、タンク容量、航続距離、排気量＝7段階）\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(\n    年式スコア = case_when(\n      年式 &gt;= 2020 ~ 5,\n      年式 &gt;= 2015 ~ 4,\n      年式 &gt;= 2010 ~ 3,\n      年式 &gt;= 2000 ~ 2,\n      年式 &gt;= 1990 ~ 1,\n      TRUE ~ 0\n    ),\n    燃費スコア = case_when(\n      燃費 &gt;= 40 ~ 5,\n      燃費 &gt;= 35 ~ 4,\n      燃費 &gt;= 30 ~ 3,\n      燃費 &gt;= 25 ~ 2,\n      燃費 &gt;= 20 ~ 1,\n      TRUE ~ 0\n    ),\n    タンクスコア = case_when(\n      タンク容量 &gt;= 20 ~ 5,\n      タンク容量 &gt;= 17 ~ 4,\n      タンク容量 &gt;= 14 ~ 3,\n      タンク容量 &gt;= 10 ~ 2,\n      タンク容量 &gt;= 5 ~ 1,\n      TRUE ~ 0\n    ),\n    航続スコア = case_when(\n      航続距離 &gt;= 500 ~ 5,\n      航続距離 &gt;= 400 ~ 4,\n      航続距離 &gt;= 300 ~ 3,\n      航続距離 &gt;= 200 ~ 2,\n      航続距離 &gt;= 100 ~ 1,\n      TRUE ~ 0\n    ),\n    排気量スコア = case_when(\n      排気量 &lt;= 50 ~ 1,\n      排気量 &lt;= 125 ~ 2,\n      排気量 &lt;= 250 ~ 3,\n      排気量 &lt;= 400 ~ 4,\n      排気量 &lt;= 750 ~ 5,\n      排気量 &lt;= 1000 ~ 6,\n      排気量 &gt; 1000 ~ 7,\n      TRUE ~ NA_real_\n    ),\n    合計スコア = 年式スコア + 燃費スコア + タンクスコア + 航続スコア + 排気量スコア\n  )\n\n# 表形式で表示（インタラクティブ）\ndatatable(\n  all_bikes %&gt;%\n    select(メーカー, 車種, 年式, 燃費, タンク容量, 航続距離, 排気量,\n           年式スコア, 燃費スコア, タンクスコア, 航続スコア, 排気量スコア, 合計スコア),\n  options = list(pageLength = 15),\n  caption = \"バイクのスペック評価（スコア一覧）\"\n)\n\n\n\n\n\n\n\n単位\n\n燃費：km\n\n\nタンク容量：L\n\n\n航続距離：km\n\n\n排気量：cc"
+  },
+  {
+    "objectID": "about-3.html#メーカーごとの特徴",
+    "href": "about-3.html#メーカーごとの特徴",
+    "title": "グラフで比較",
+    "section": "メーカーごとの特徴",
+    "text": "メーカーごとの特徴\n・アプリリア・カワサキ：高排気量モデルが多く、平均的に航続距離は短め。\n・BMW・ホンダ：大型のバイクでも長距離走行に適した設計、特にアドベンチャー系は航続距離が他社を上回る。\n・日本メーカー全般（スズキ・ホンダなど）は、排気量控えめなモデルから大型までバランスよく航続距離を確保。\n・一般的には『小排気量ほど燃費が良く、航続距離も相対的に長い』が、逆に『大排気量でも大容量タンクを積めば航続距離は伸びる』という傾向が見られる\n\n\n\n\n\n\n\n排気量\n航続距離傾向\n\n\n\n\n小排気量\n電費が良く、タンク容量次第では長距離も可\n\n\n大排気量\nエンジン性能は高いが燃費は悪化しがち\n\n\n大排気量＋大タンクなモデル\n長距離性能に強い（例：BMWアドベンチャー）\n\n\n\n\nlibrary(readxl)\nlibrary(dplyr)\n\n# ファイルパス\nfile_path &lt;- \"バイク年式;燃費 .xlsx\"\nsheet_names &lt;- excel_sheets(file_path)\n\n# データ読み込みとメーカー列追加\nall_sheets &lt;- lapply(sheet_names, function(sheet) {\n  df &lt;- read_excel(file_path, sheet = sheet)\n  df$メーカー &lt;- sheet\n  df\n})\nall_bikes &lt;- bind_rows(all_sheets)\n\n# 必要な列名の標準化（調整が必要な場合あり）\nall_bikes &lt;- all_bikes %&gt;%\n  rename(\n    車種 = 1,\n    年式 = 2,\n    燃費 = 3,\n    タンク容量 = 4,\n    航続距離 = 5,\n    排気量 = 6\n  ) %&gt;%\n  mutate(\n    年式 = as.numeric(年式),\n    燃費 = as.numeric(燃費),\n    排気量 = as.numeric(排気量)\n  )\n\n# 排気量帯を分類\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(排気量帯 = case_when(\n    排気量 &lt;= 125 ~ \"原付・小型\",\n    排気量 &lt;= 250 ~ \"中型\",\n    排気量 &lt;= 750 ~ \"大型\",\n    TRUE ~ \"特大型\"\n  ))\n\n# 排気量帯別平均燃費を可視化\nlibrary(ggplot2)\n\nggplot(all_bikes, aes(x = 排気量帯, y = 燃費)) +\n  geom_boxplot(fill = \"lightblue\") +\n  labs(title = \"排気量帯別 燃費比較\", x = \"排気量帯\", y = \"燃費（km/L）\") +\n  theme_minimal()\n\n\n\n\n\n\n\n\n\n\n\n\n\n排気量帯\n中央燃費\nばらつき\n特徴\n\n\n\n\n原付・小型\n非常に高い\n大きい\n軽量・低出力ゆえ燃費性能が高く、車種間差も大きい\n\n\n中型\n高～中程度\n中程度\nバランス志向のモデルが多い\n\n\n大型\n中程度\nやや少ない\n高出力重視で燃費は控えめ\n\n\n特大型\n低い\n少ない\n大排気量・高出力で燃費は最も低い\n\n\n\n\n選ぶときの参考に\nコスパ・燃費重視なら小型帯（～250cc）：高燃費かつ軽量で使いやすい。\n長距離・パワー重視なら大型～特大型帯：燃費は犠牲になるもののパフォーマンスと航続距離重視が可能。\n中型帯はバランス型：適度な燃費と性能の両方を兼ねた選択肢\n\n# 仮に2スト・4スト情報を追加（例：条件や外部データで）\nall_bikes &lt;- all_bikes %&gt;%\n  mutate(ストローク = case_when(\n    grepl(\"NSR|TZR|RZ\", 車種, ignore.case = TRUE) ~ \"2スト\",\n    TRUE ~ \"4スト\"\n  ))\n\n# ストローク別平均燃費比較\nggplot(all_bikes, aes(x = ストローク, y = 燃費, fill = ストローク)) +\n  geom_boxplot() +\n  labs(title = \"2スト / 4スト 燃費比較\", x = \"エンジンタイプ\", y = \"燃費（km/L）\") +\n  theme_minimal()"
+  },
+  {
+    "objectID": "about-3.html#スト赤色の箱",
+    "href": "about-3.html#スト赤色の箱",
+    "title": "グラフで比較",
+    "section": "2スト（赤色の箱）",
+    "text": "2スト（赤色の箱）\n中央値：約35km/L\n四分位範囲（箱の上下）：約32〜42km/L\n外れ値：60km/L以上のいくつかの点\n全体の分布：比較的狭い範囲に収まっており、燃費のばらつきが少ない"
+  },
+  {
+    "objectID": "about-3.html#スト青緑色の箱",
+    "href": "about-3.html#スト青緑色の箱",
+    "title": "グラフで比較",
+    "section": "🟦 4スト（青緑色の箱）",
+    "text": "🟦 4スト（青緑色の箱）\n中央値：約28km/L\n四分位範囲：約20〜50km/L\n外れ値：70km/L以上に多数存在（最大約120km/L）\n全体の分布：ばらつきが大きく、燃費の良い車両も存在"
+  },
+  {
+    "objectID": "about-3.html#結論",
+    "href": "about-3.html#結論",
+    "title": "グラフで比較",
+    "section": "💡 結論",
+    "text": "💡 結論\n2ストロークエンジンの燃費は安定しており平均も高め。\n4ストロークエンジンは燃費にばらつきが大きい。一部に非常に高燃費な車両があるが、中央値は低め。"
+  },
+  {
+    "objectID": "about-3.html#考察ポイント",
+    "href": "about-3.html#考察ポイント",
+    "title": "グラフで比較",
+    "section": "✅ 考察ポイント",
+    "text": "✅ 考察ポイント\n2ストは構造がシンプルで軽いため燃費が良くなりやすいが、環境性能の面で劣ることがある。\n4ストは燃費に差が出やすく、設計や用途によって大きく異なる可能性がある（例：スクーター vs 高性能バイク）。\n\n# 年式ごとの平均燃費を折れ線で表示\nall_bikes %&gt;%\n  group_by(年式) %&gt;%\n  summarise(平均燃費 = mean(燃費, na.rm = TRUE)) %&gt;%\n  ggplot(aes(x = 年式, y = 平均燃費)) +\n  geom_line(color = \"darkgreen\") +\n  geom_point() +\n  labs(title = \"年式別 平均燃費の推移\", x = \"年式\", y = \"平均燃費（km/L）\") +\n  theme_minimal()"
+  },
+  {
+    "objectID": "about-3.html#グラフの概要",
+    "href": "about-3.html#グラフの概要",
+    "title": "グラフで比較",
+    "section": "📈 グラフの概要",
+    "text": "📈 グラフの概要\nX軸（横軸）：年式（車両の製造年）\nY軸（縦軸）：平均燃費（km/L）"
+  },
+  {
+    "objectID": "about-3.html#主な観察ポイント",
+    "href": "about-3.html#主な観察ポイント",
+    "title": "グラフで比較",
+    "section": "🔍 主な観察ポイント",
+    "text": "🔍 主な観察ポイント\n\n全体傾向 年式が新しくなるにつれて平均燃費が一貫して向上しているわけではない。\n\nむしろ、波がありつつ2000年代後半にピークがある。\n\n特筆すべき年 1977年・2009年ごろに異常に高い平均燃費のピーク\n\n特に2009年は平均燃費90km/L以上と突出しており、何らかの特殊な車種（例：ハイブリッド、超軽量車）が混じっている可能性。\n\n1980〜1995年 平均燃費は30〜40km/Lの間を変動。\n\n乱高下はあるが、大きな傾向は見られにくい。\n\n1995〜2010年 燃費がやや改善傾向。1999年、2006年、2009年などにピーク。\n\n技術進歩（インジェクション、エコ仕様）や法規制の影響も考えられる。\n\n2010年以降 燃費はやや減少傾向。\n\n新しい年式でも平均燃費が30km/L前後に低下している。\n→ 重量増加、安全装備の追加、大排気量モデルの増加などの影響か？"
+  },
+  {
+    "objectID": "about-3.html#考察ポイント-1",
+    "href": "about-3.html#考察ポイント-1",
+    "title": "グラフで比較",
+    "section": "💡 考察ポイント",
+    "text": "💡 考察ポイント\n平均燃費の推移が一直線に向上していないのは、時代ごとの需要・技術・規制・ラインナップ構成の影響。\n一部の年に極端な高燃費データが含まれていることから、サンプルにごく少数の特殊車両（例：カブ系、EVバイク）が含まれている可能性も考えられる。"
+  },
+  {
+    "objectID": "about-5.html#suzuki-lets2",
+    "href": "about-5.html#suzuki-lets2",
+    "title": "愛車紹介",
+    "section": "SUZUKI Let’s2",
+    "text": "SUZUKI Let’s2"
+  },
+  {
+    "objectID": "about-5.html#honda-today",
+    "href": "about-5.html#honda-today",
+    "title": "愛車紹介",
+    "section": "HONDA TODAY",
+    "text": "HONDA TODAY"
+  },
+  {
+    "objectID": "about-5.html#suzuki-across",
+    "href": "about-5.html#suzuki-across",
+    "title": "愛車紹介",
+    "section": "SUZUKI ACROSS",
+    "text": "SUZUKI ACROSS"
+  },
+  {
+    "objectID": "about-5.html#yamaha-tzr503tu",
+    "href": "about-5.html#yamaha-tzr503tu",
+    "title": "愛車紹介",
+    "section": "YAMAHA TZR50(3TU)",
+    "text": "YAMAHA TZR50(3TU)\n\n他、HONDA 　PCX125（JF56）"
+  },
+  {
+    "objectID": "about.html#名前大石-拓真オオイシ-タクマ",
+    "href": "about.html#名前大石-拓真オオイシ-タクマ",
+    "title": "自己紹介",
+    "section": "名前:大石　拓真（オオイシ　タクマ）",
+    "text": "名前:大石　拓真（オオイシ　タクマ）"
+  },
+  {
+    "objectID": "about.html#所属東京国際大学-商学部-経営学科-データサイエンスコース３年",
+    "href": "about.html#所属東京国際大学-商学部-経営学科-データサイエンスコース３年",
+    "title": "自己紹介",
+    "section": "所属：東京国際大学　商学部　経営学科　データサイエンスコース３年",
+    "text": "所属：東京国際大学　商学部　経営学科　データサイエンスコース３年"
+  },
+  {
+    "objectID": "about.html#出身埼玉県",
+    "href": "about.html#出身埼玉県",
+    "title": "自己紹介",
+    "section": "出身：埼玉県",
+    "text": "出身：埼玉県"
+  },
+  {
+    "objectID": "about.html#趣味バイク音楽鑑賞",
+    "href": "about.html#趣味バイク音楽鑑賞",
+    "title": "自己紹介",
+    "section": "趣味：バイク・音楽鑑賞",
+    "text": "趣味：バイク・音楽鑑賞"
+  }
+]
